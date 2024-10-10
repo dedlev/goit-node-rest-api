@@ -2,9 +2,7 @@ import mongoose from "mongoose";
 
 import app from "./app.js";
 
-//nssuvqcVTdhIAZxp
-
-const DB_HOST = "mongodb+srv://Leonid:nssuvqcVTdhIAZxp@cluster0.7d04y.mongodb.net/db-contacts?retryWrites=true&w=majority&appName=Cluster0"
+const { DB_HOST } = process.env;
 
 mongoose.connect(DB_HOST)
     .then(() => console.log("Database connection successful"))
