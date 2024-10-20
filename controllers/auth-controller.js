@@ -5,8 +5,6 @@ import User from "../models/User.js";
 import { userSignupSchema, userSigninSchema } from "../models/User.js"
 import HttpError from "../helpers/HttpError.js";
 
-// dotenv.configDotenv();
-
 const { JWT_SECRET } = process.env;
 
 const signup = async(reg, res, next) => {
@@ -39,6 +37,7 @@ const signin = async (req, res, next) => {
         const { email, password } = req.body;
         
         const user = await User.findOne({ email });
+
         if (!user) {
             return next(HttpError(401, "Email or password is wrong"));
         }
@@ -55,14 +54,41 @@ const signin = async (req, res, next) => {
 
         const payload = { id: user._id };
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "23h" });
+        await User.findByIdAndUpdate(user._id, { token });
 
-        res.json({ token });
+        res.json({
+            token,
+            user: {
+                email: user.email,
+                subscription: user.subscription,
+            }
+        })
     } catch (error) {
         next(error);
     }
 };
 
+const getCurrent = async (req, res) => {
+    const { email, subscription } = req.user;
+    res.json({
+        email,
+        subscription,
+    })
+};
+
+const signout = async (req, res, next) => {
+    const { _id } = req.user;
+
+    await User.findByIdAndUpdate(_id, { token: null });
+ 
+    res.status(204).json({
+        message: "No Content"
+    })
+}
+
 export default {
     signup,
-    signin
+    signin,
+    getCurrent,
+    signout,
 }
