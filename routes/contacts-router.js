@@ -1,5 +1,5 @@
 import express from "express";
-import {isValidId} from "../middlewares/index.js"
+import {isValidId } from "../middlewares/index.js"
 import {
   getAllContacts,
   getOneContact,
@@ -7,9 +7,13 @@ import {
   createContact,
   updateContact,
   updateStatusContact,
-} from "../controllers/contactsControllers.js";
+} from "../controllers/contacts-controllers.js";
+import { authenticate } from "../middlewares/index.js";
+
 
 const contactsRouter = express.Router();
+
+contactsRouter.use(authenticate);
 
 contactsRouter.get("/", getAllContacts);
 
