@@ -7,7 +7,6 @@ const { JWT_SECRET } = process.env;
 
 const authenticate = async (reg, res, next) => {
     const { authorization } = reg.headers;
-    console.log('authorization', authorization)
     if (!authorization) {
         return next(HttpError(401, "Not authorized"));
     }
@@ -15,7 +14,7 @@ const authenticate = async (reg, res, next) => {
     const [bearer, token] = authorization.split(" ");
 
     if (bearer !== "Bearer") {
-        return next(HttpError(401, "Invalid token"));
+        return next(HttpError(401, "Not authorized"));
     }
 
     try {

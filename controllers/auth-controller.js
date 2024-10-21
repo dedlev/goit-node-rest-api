@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import "dotenv/config.js";
 import User from "../models/User.js";
-import { userSignupSchema, userSigninSchema } from "../models/User.js"
+import { userSignupSchema, userSigninSchema, userSubscriptionSchema } from "../models/User.js"
 import HttpError from "../helpers/HttpError.js";
 
 const { JWT_SECRET } = process.env;
@@ -84,11 +84,42 @@ const signout = async (req, res, next) => {
     res.status(204).json({
         message: "No Content"
     })
-}
+};
+
+const userSubscription = async (req, res, next) => {
+  try {
+    const { error } = userSubscriptionSchema.validate(req.body);
+    if (error) {
+      return next(HttpError(400, error.message));
+    }
+
+    const { subscription } = req.body;
+    const { _id } = req.user;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      { subscription },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return next(HttpError(404, "User not found"));
+    }
+
+    res.status(200).json({
+      email: updatedUser.email,
+      subscription: updatedUser.subscription,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 export default {
     signup,
     signin,
     getCurrent,
     signout,
+    userSubscription,
 }

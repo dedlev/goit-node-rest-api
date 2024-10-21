@@ -10,5 +10,6 @@ authRouter.post("/signup", authController.signup);
 authRouter.post("/signin", authController.signin);
 authRouter.get("/current", authenticate, authController.getCurrent);
 authRouter.post("/signout", authenticate, authController.signout);
+authRouter.patch("/users", authenticate, authController.userSubscription);
 
 export default authRouter;
