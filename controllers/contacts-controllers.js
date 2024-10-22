@@ -58,6 +58,8 @@ export const createContact = async (req, res, next) => {
     
     try {
         const { _id: owner } = req.user;
+        // console.log(reg.file);
+        // console.log(reg.body);
         const contact = await Contact.create({...req.body, owner});
         res.status(201).json(contact);
     } catch (error) {
