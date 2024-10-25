@@ -1,5 +1,5 @@
 import express from 'express';
-import { isValidId, authenticate, upload } from '../middlewares/index.js';
+import { isValidId, authenticate } from '../middlewares/index.js';
 import {
   getAllContacts,
   getOneContact,
@@ -19,10 +19,7 @@ contactsRouter.get('/:id', isValidId, getOneContact);
 
 contactsRouter.delete('/:id', isValidId, deleteContact);
 
-// upload.filds([{name: "avatar", maxCount: 1}]);
-// upload.array("avatar", 8)
-// contactsRouter.post("/", createContact);
-contactsRouter.post('/', upload.single('avatar'), createContact);
+contactsRouter.post('/', createContact);
 
 contactsRouter.put('/:id', isValidId, updateContact);
 

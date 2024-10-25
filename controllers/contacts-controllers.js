@@ -1,6 +1,3 @@
-import fs from 'fs/promises';
-import path from 'path';
-
 import Contact, {
   createContactSchema,
   updateContactSchema,
@@ -8,8 +5,6 @@ import Contact, {
 } from '../models/Contact.js';
 
 import HttpError from '../helpers/HttpError.js';
-
-const avatarPath = path.resolve('public', 'avatars');
 
 export const getAllContacts = async (req, res, next) => {
   try {
@@ -71,12 +66,8 @@ export const createContact = async (req, res, next) => {
 
   try {
     const { _id: owner } = req.user;
-    const { path: oldPath, filename } = req.file;
-    const newPath = path.join(avatarPath, filename);
-    await fs.rename(oldPath, newPath);
 
-    const avatar = path.join('avatars', filename);
-    const contact = await Contact.create({ ...req.body, avatar, owner });
+    const contact = await Contact.create({ ...req.body, owner });
 
     res.status(201).json(contact);
   } catch (error) {
