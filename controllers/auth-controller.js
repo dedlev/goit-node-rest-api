@@ -7,21 +7,21 @@ import HttpError from "../helpers/HttpError.js";
 
 const { JWT_SECRET } = process.env;
 
-const signup = async(reg, res, next) => {
-    const { email , password } = reg.body;
+const signup = async(req, res, next) => {
+    const { email , password } = req.body;
     const user = await User.findOne({ email });
     if (user) {
         return next(HttpError(409, "Email in use"));
     }
 
-    const { error } = userSignupSchema.validate(reg.body);
+    const { error } = userSignupSchema.validate(req.body);
      if (error) {
         return next(HttpError(400, error.message));
     };
 
     const hashPassword = await bcrypt.hash(password, 10);
     try {
-        const newUser = await User.create({ ...reg.body, password: hashPassword });
+        const newUser = await User.create({ ...req.body, password: hashPassword });
         res.status(201).json({
             username: newUser.username,
             email: newUser.email,
