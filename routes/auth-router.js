@@ -1,15 +1,16 @@
-import express from "express";
+import express from 'express';
 
-import authController from "../controllers/auth-controller.js";
+import authController from '../controllers/auth-controller.js';
 
-import authenticate from "../middlewares/authenticate.js";
+import { authenticate, upload } from '../middlewares/index.js';
 
 const authRouter = express.Router();
 
-authRouter.post("/signup", authController.signup);
-authRouter.post("/signin", authController.signin);
-authRouter.get("/current", authenticate, authController.getCurrent);
-authRouter.post("/signout", authenticate, authController.signout);
-authRouter.patch("/users", authenticate, authController.userSubscription);
+authRouter.post('/signup', upload.single('avatar'), authController.signup);
+authRouter.post('/signin', authController.signin);
+authRouter.get('/current', authenticate, authController.getCurrent);
+authRouter.post('/signout', authenticate, authController.signout);
+authRouter.patch('/users', authenticate, authController.userSubscription);
+authRouter.patch('/users/avatars', authenticate, upload.single('avatar'), authController.updateAvatar);
 
 export default authRouter;

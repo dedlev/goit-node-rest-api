@@ -1,89 +1,108 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import "dotenv/config.js";
-import User from "../models/User.js";
-import { userSignupSchema, userSigninSchema, userSubscriptionSchema } from "../models/User.js"
-import HttpError from "../helpers/HttpError.js";
+import fs from 'fs/promises';
+import path from 'path';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import 'dotenv/config.js';
+import gravatar from "gravatar";
+import Jimp from 'jimp';
+import User from '../models/User.js';
+import {
+  userSignupSchema,
+  userSigninSchema,
+  userSubscriptionSchema,
+} from '../models/User.js';
+import HttpError from '../helpers/HttpError.js';
 
 const { JWT_SECRET } = process.env;
 
-const signup = async(reg, res, next) => {
-    const { email , password } = reg.body;
-    const user = await User.findOne({ email });
-    if (user) {
-        return next(HttpError(409, "Email in use"));
-    }
+const avatarPath = path.resolve('public', 'avatars');
 
-    const { error } = userSignupSchema.validate(reg.body);
-     if (error) {
-        return next(HttpError(400, error.message));
-    };
+const signup = async (req, res, next) => {
+  const { email, password } = req.body;
 
-    const hashPassword = await bcrypt.hash(password, 10);
-    try {
-        const newUser = await User.create({ ...reg.body, password: hashPassword });
-        res.status(201).json({
-            username: newUser.username,
-            email: newUser.email,
-            subscription: newUser.subscription,
-        })
-    } catch (error) {
-        next(error)
-    }  
+  const user = await User.findOne({ email });
+  if (user) {
+    return next(HttpError(409, 'Email in use'));
+  }
+
+  const { error } = userSignupSchema.validate(req.body);
+  if (error) {
+    return next(HttpError(400, error.message));
+  }
+
+  const hashPassword = await bcrypt.hash(password, 10);
+
+  try {
+    const avatar = gravatar.url(email, { s: '200', d: 'retro' }, true);
+  
+    const newUser = await User.create({
+      ...req.body,
+      avatar,
+      password: hashPassword,
+    });
+    res.status(201).json({
+      username: newUser.username,
+      email: newUser.email,
+      subscription: newUser.subscription,
+      avatarURL: newUser.avatar,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 const signin = async (req, res, next) => {
-    try {
-        const { email, password } = req.body;
-        
-        const user = await User.findOne({ email });
+  try {
+    const { email, password } = req.body;
 
-        if (!user) {
-            return next(HttpError(401, "Email or password is wrong"));
-        }
+    const user = await User.findOne({ email });
 
-        const { error } = userSigninSchema.validate(req.body);
-        if (error) {
-            return next(HttpError(400, error.message));
-        }
-
-        const passwordCompare = await bcrypt.compare(password, user.password);
-        if (!passwordCompare) {
-            return next(HttpError(401, "Email or password is wrong"));
-        }
-
-        const payload = { id: user._id };
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "23h" });
-        await User.findByIdAndUpdate(user._id, { token });
-
-        res.json({
-            token,
-            user: {
-                email: user.email,
-                subscription: user.subscription,
-            }
-        })
-    } catch (error) {
-        next(error);
+    if (!user) {
+      return next(HttpError(401, 'Email or password is wrong'));
     }
+
+    const { error } = userSigninSchema.validate(req.body);
+    if (error) {
+      return next(HttpError(400, error.message));
+    }
+
+    const passwordCompare = await bcrypt.compare(password, user.password);
+    if (!passwordCompare) {
+      return next(HttpError(401, 'Email or password is wrong'));
+    }
+
+    const payload = { id: user._id };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '23h' });
+    await User.findByIdAndUpdate(user._id, { token });
+
+    res.json({
+      token,
+      user: {
+        email: user.email,
+        subscription: user.subscription,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 const getCurrent = async (req, res) => {
-    const { email, subscription } = req.user;
-    res.json({
-        email,
-        subscription,
-    })
+  const { email, subscription } = req.user;
+  res.json({
+    email,
+    subscription,
+  });
 };
 
 const signout = async (req, res, next) => {
-    const { _id } = req.user;
+  const { _id } = req.user;
 
-    await User.findByIdAndUpdate(_id, { token: null });
- 
-    res.status(204).json({
-        message: "No Content"
-    })
+  await User.findByIdAndUpdate(_id, { token: null });
+
+  res.status(204).json({
+    message: 'No Content',
+  });
 };
 
 const userSubscription = async (req, res, next) => {
@@ -103,7 +122,7 @@ const userSubscription = async (req, res, next) => {
     );
 
     if (!updatedUser) {
-      return next(HttpError(404, "User not found"));
+      return next(HttpError(404, 'User not found'));
     }
 
     res.status(200).json({
@@ -115,11 +134,36 @@ const userSubscription = async (req, res, next) => {
   }
 };
 
+const updateAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return next(HttpError(400, 'Avatar image is required'))
+    }
+
+    const { path: tempPath, filename } = req.file;
+    const newPath = path.join(avatarPath, filename);
+
+    const image = await Jimp.read(tempPath);
+    image.resize(250, 250);
+    await image.writeAsync(tempPath);
+
+    await fs.rename(tempPath, newPath);
+
+    const avatarURL = path.join('avatars', filename);
+    const { _id } = req.user;
+    await User.findByIdAndUpdate(_id, { avatar: avatarURL });
+
+      res.status(200).json({ avatarURL: `http://localhost:3000/${avatarURL}` });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export default {
-    signup,
-    signin,
-    getCurrent,
-    signout,
-    userSubscription,
-}
+  signup,
+  signin,
+  getCurrent,
+  signout,
+  userSubscription,
+  updateAvatar,
+};
