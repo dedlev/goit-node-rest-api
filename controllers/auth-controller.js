@@ -3,6 +3,8 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import 'dotenv/config.js';
+import gravatar from "gravatar";
+import Jimp from 'jimp';
 import User from '../models/User.js';
 import {
   userSignupSchema,
@@ -17,6 +19,7 @@ const avatarPath = path.resolve('public', 'avatars');
 
 const signup = async (req, res, next) => {
   const { email, password } = req.body;
+
   const user = await User.findOne({ email });
   if (user) {
     return next(HttpError(409, 'Email in use'));
@@ -28,12 +31,10 @@ const signup = async (req, res, next) => {
   }
 
   const hashPassword = await bcrypt.hash(password, 10);
-  try {
-    const { path: oldPath, filename } = req.file;
-    const newPath = path.join(avatarPath, filename);
-    await fs.rename(oldPath, newPath);
 
-    const avatar = path.join('avatars', filename);
+  try {
+    const avatar = gravatar.url(email, { s: '200', d: 'retro' }, true);
+  
     const newUser = await User.create({
       ...req.body,
       avatar,
@@ -43,6 +44,7 @@ const signup = async (req, res, next) => {
       username: newUser.username,
       email: newUser.email,
       subscription: newUser.subscription,
+      avatarURL: newUser.avatar,
     });
   } catch (error) {
     next(error);
@@ -132,10 +134,36 @@ const userSubscription = async (req, res, next) => {
   }
 };
 
+const updateAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return next(HttpError(400, 'Avatar image is required'))
+    }
+
+    const { path: tempPath, filename } = req.file;
+    const newPath = path.join(avatarPath, filename);
+
+    const image = await Jimp.read(tempPath);
+    image.resize(250, 250);
+    await image.writeAsync(tempPath);
+
+    await fs.rename(tempPath, newPath);
+
+    const avatarURL = path.join('avatars', filename);
+    const { _id } = req.user;
+    await User.findByIdAndUpdate(_id, { avatar: avatarURL });
+
+      res.status(200).json({ avatarURL: `http://localhost:3000/${avatarURL}` });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   signup,
   signin,
   getCurrent,
   signout,
   userSubscription,
+  updateAvatar,
 };

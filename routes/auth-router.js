@@ -6,12 +6,11 @@ import { authenticate, upload } from '../middlewares/index.js';
 
 const authRouter = express.Router();
 
-// upload.filds([{name: "avatar", maxCount: 1}]);
-// upload.array("avatar", 8)
 authRouter.post('/signup', upload.single('avatar'), authController.signup);
 authRouter.post('/signin', authController.signin);
 authRouter.get('/current', authenticate, authController.getCurrent);
 authRouter.post('/signout', authenticate, authController.signout);
 authRouter.patch('/users', authenticate, authController.userSubscription);
+authRouter.patch('/users/avatars', authenticate, upload.single('avatar'), authController.updateAvatar);
 
 export default authRouter;
