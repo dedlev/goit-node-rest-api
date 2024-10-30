@@ -1,14 +1,15 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { nanoid } from "nanoid";
 import "dotenv/config.js";
 import User from "../models/User.js";
 import { userSignupSchema, userSigninSchema, userSubscriptionSchema } from "../models/User.js"
-import HttpError from "../helpers/HttpError.js";
+import { HttpError, sendEmail } from "../helpers/index.js";
 
-const { JWT_SECRET } = process.env;
+const { JWT_SECRET,SENDGRID_MAIL_FROM, BASE_URL } = process.env;
 
 const signup = async(reg, res, next) => {
-    const { email , password } = reg.body;
+  const { email, password } = reg.body;
     const user = await User.findOne({ email });
     if (user) {
         return next(HttpError(409, "Email in use"));
@@ -19,17 +20,27 @@ const signup = async(reg, res, next) => {
         return next(HttpError(400, error.message));
     };
 
-    const hashPassword = await bcrypt.hash(password, 10);
-    try {
-        const newUser = await User.create({ ...reg.body, password: hashPassword });
-        res.status(201).json({
-            username: newUser.username,
-            email: newUser.email,
-            subscription: newUser.subscription,
-        })
-    } catch (error) {
-        next(error)
-    }  
+  const hashPassword = await bcrypt.hash(password, 10);
+  const verificationToken = nanoid();
+  try {
+    const newUser = await User.create({ ...reg.body, password: hashPassword, verificationToken });
+    
+    const verifyEmail = {
+      to: email,
+      subject: "Verify email",
+      html: `<a target="_blank" href"${BASE_URL}/api/auth/verify/${verificationToken}">Click verify email</a>`
+    }
+
+    await sendEmail(verifyEmail);
+      
+    res.status(201).json({
+        username: newUser.username,
+        email: newUser.email,
+        subscription: newUser.subscription,
+    })
+  } catch (error) {
+      next(error)
+  }  
 };
 
 const signin = async (req, res, next) => {
