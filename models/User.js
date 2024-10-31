@@ -23,7 +23,6 @@ const userSchema = new Schema(
     },
     avatar: {
       type: String,
-      required: true,
     },
     subscription: {
       enum: ['starter', 'pro', 'business'],
@@ -31,12 +30,17 @@ const userSchema = new Schema(
       default: 'starter',
     },
     token: {
-      type: String,
-      default: null,
-    },
+        type: String,
+        default: null,
   },
-  { versionKey: false, timestamps: true }
-);
+      verify: {
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+  },
+}, { versionKey: false, timestamps: true });
 
 userSchema.post('save', handleSaveError);
 
@@ -53,6 +57,10 @@ export const userSignupSchema = Joi.object({
 export const userSigninSchema = Joi.object({
   email: Joi.string().pattern(emailRegexp).required(),
   password: Joi.string().min(6).required(),
+});
+
+export const userEmailSchema = Joi.object({
+  email: Joi.string().pattern(emailRegexp).required(),
 });
 
 export const userSubscriptionSchema = Joi.object({

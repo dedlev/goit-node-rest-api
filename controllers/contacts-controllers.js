@@ -1,10 +1,5 @@
-import Contact, {
-  createContactSchema,
-  updateContactSchema,
-  contactStatusSchema,
-} from '../models/Contact.js';
-
-import HttpError from '../helpers/HttpError.js';
+import Contact, { createContactSchema, updateContactSchema, contactStatusSchema } from "../models/Contact.js"
+import { HttpError }  from "../helpers/index.js";
 
 export const getAllContacts = async (req, res, next) => {
   try {

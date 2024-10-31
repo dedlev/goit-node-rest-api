@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-
+import "dotenv/config";
 import app from "./app.js";
 
-const { DB_HOST, PORT = 3000 } = process.env;
+const { DB_HOST, PORT } = process.env;
 
 mongoose.connect(DB_HOST)
     .then(() => {
@@ -15,4 +15,3 @@ mongoose.connect(DB_HOST)
         console.log(error.message);
         process.exit(1);
     });
-
