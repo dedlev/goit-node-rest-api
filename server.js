@@ -1,9 +1,8 @@
 import mongoose from "mongoose";
-import sgMail from '@sendgrid/mail';
 import "dotenv/config";
 import app from "./app.js";
 
-const { DB_HOST, PORT, SENDGRID_MAIL_FROM, SENDGRID_API_KEY } = process.env;
+const { DB_HOST, PORT } = process.env;
 
 mongoose.connect(DB_HOST)
     .then(() => {
